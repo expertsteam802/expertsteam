@@ -49,18 +49,30 @@ function AuthPage() {
     if (user) void navigate({ to: "/dashboard", replace: true });
   }, [user, navigate]);
 
-  async function signIn() {
+  async function signIn(): Promise<void> {
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Welcome back!");
   }
 
-  async function signUp() {
-    if (Number(answer) !== challenge.sum) return toast.error("Please answer the verification question.");
-    if (password.length < 6) return toast.error("Use at least 6 characters for your password.");
-    if (username.trim().length < 3) return toast.error("Pick a username with at least 3 characters.");
+  async function signUp(): Promise<void> {
+    if (Number(answer) !== challenge.sum) {
+      toast.error("Please answer the verification question.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Use at least 6 characters for your password.");
+      return;
+    }
+    if (username.trim().length < 3) {
+      toast.error("Pick a username with at least 3 characters.");
+      return;
+    }
     setBusy(true);
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
@@ -71,10 +83,14 @@ function AuthPage() {
       },
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     if (!data.session) {
       setEmailSent(true);
-      return toast.success("Check your email to confirm your account.");
+      toast.success("Check your email to confirm your account.");
+      return;
     }
     toast.success("Account created!");
   }
