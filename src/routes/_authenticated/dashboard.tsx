@@ -107,7 +107,7 @@ function DashboardPage() {
       const { error } = await supabase
         .from("profiles")
         .update({
-          display_name: displayName.trim().slice(0, 60) || profile?.display_name,
+          display_name: displayName.trim().slice(0, 60) || profile?.display_name || null,
           bio: bio.trim().slice(0, 300) || null,
         })
         .eq("id", user!.id);
