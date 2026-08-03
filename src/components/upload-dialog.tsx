@@ -1,0 +1,198 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { UploadCloud } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { formatBytes } from "@/lib/format";
+import { MAX_UPLOAD_BYTES, uploadWithProgress } from "@/lib/upload";
+
+const CATEGORIES = [
+  { value: "game", label: "Game" },
+  { value: "video", label: "Video" },
+  { value: "lesson", label: "Lesson / book" },
+  { value: "resource", label: "Resource" },
+];
+
+export function UploadDialog({ defaultCategory = "resource" }: { defaultCategory?: string }) {
+  const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState(defaultCategory);
+  const [price, setPrice] = useState("0");
+  const [payoutAccount, setPayoutAccount] = useState("");
+  const [percent, setPercent] = useState(0);
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Sign in to upload.");
+      if (!file) throw new Error("Choose a file first.");
+      if (file.size > MAX_UPLOAD_BYTES) throw new Error("Files must be 200MB or smaller.");
+      if (profile && file.size > profile.storage_quota_bytes) {
+        throw new Error("This file is bigger than your remaining space — upgrade for more room.");
+      }
+      setPercent(0);
+      const path = await uploadWithProgress({ file, userId: user.id, onProgress: setPercent });
+
+      const { error } = await supabase.from("files").insert({
+        user_id: user.id,
+        title: (title.trim() || file.name).slice(0, 140),
+        description: description.trim().slice(0, 1000) || null,
+        storage_path: path,
+        file_name: file.name,
+        mime_type: file.type || null,
+        size_bytes: file.size,
+        category,
+        price: Math.max(0, Number(price) || 0),
+        payout_account: payoutAccount.trim() || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Upload complete");
+      setFile(null);
+      setTitle("");
+      setDescription("");
+      setPrice("0");
+      setPayoutAccount("");
+      setPercent(0);
+      setOpen(false);
+      void queryClient.invalidateQueries({ queryKey: ["files"] });
+    },
+    onError: (error: Error) => {
+      setPercent(0);
+      toast.error(error.message);
+    },
+  });
+
+  if (!user) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(next) => !mutation.isPending && setOpen(next)}>
+      <DialogTrigger asChild>
+        <Button>
+          <UploadCloud className="mr-2 h-4 w-4" /> Upload a file
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Share something with the community</DialogTitle>
+          <DialogDescription>Games, videos, lessons or resources — up to 200MB per file.</DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="upload-file">File</Label>
+            <Input
+              id="upload-file"
+              type="file"
+              onChange={(event) => {
+                const selected = event.target.files?.[0] ?? null;
+                setFile(selected);
+                if (selected && !title) setTitle(selected.name.replace(/\.[^.]+$/, ""));
+              }}
+            />
+            {file && (
+              <p className="text-xs text-muted-foreground">
+                {file.name} · {formatBytes(file.size)}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="upload-title">Title</Label>
+            <Input
+              id="upload-title"
+              maxLength={140}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="upload-description">Description</Label>
+            <Textarea
+              id="upload-description"
+              maxLength={1000}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="upload-price">Price (USD, 0 = free)</Label>
+              <Input
+                id="upload-price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={price}
+                onChange={(event) => setPrice(event.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="upload-payout">Your payout account (optional)</Label>
+            <Input
+              id="upload-payout"
+              placeholder="PayPal email, card holder name or mobile money number"
+              value={payoutAccount}
+              onChange={(event) => setPayoutAccount(event.target.value)}
+            />
+          </div>
+
+          {(mutation.isPending || percent > 0) && (
+            <div className="space-y-2">
+              <Progress value={percent} />
+              <p className="text-xs text-muted-foreground">{percent}% uploaded</p>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !file}>
+            {mutation.isPending ? `Uploading ${percent}%` : "Upload"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
