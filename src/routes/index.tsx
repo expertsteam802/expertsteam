@@ -22,7 +22,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Chris Programs — Watch, Learn & Share Code" },
       {
         property: "og:description",
-        content: "Videos, games, coding lessons and a creator community by Chris Expert.",
+        content: "Chris Programs is the home of Chris Expert: watch every channel video inside the site, download games and resources, learn to code and join the community.",
       },
     ],
   }),

@@ -80,11 +80,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Chris Programs — Code, Videos & Creator Community" },
+      { title: "Chris Programs — Watch, Learn & Share Code" },
       {
         name: "description",
         content:
-          "Chris Programs by Chris Expert: watch the full video archive in-site, share games and files, learn to code and join the community.",
+          "Chris Programs is the home of Chris Expert: watch every channel video inside the site, download games and resources, learn to code and join the community.",
       },
       { name: "author", content: "Chris Expert" },
       {
@@ -95,6 +95,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:site_name", content: "Chris Programs" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "Chris Programs — Watch, Learn & Share Code" },
+      { name: "twitter:title", content: "Chris Programs — Watch, Learn & Share Code" },
+      { property: "og:description", content: "Chris Programs is the home of Chris Expert: watch every channel video inside the site, download games and resources, learn to code and join the community." },
+      { name: "twitter:description", content: "Chris Programs is the home of Chris Expert: watch every channel video inside the site, download games and resources, learn to code and join the community." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/vknORbvDXVUatwXg5kquCtyuXKN2/social-images/social-1785808354505-social-image.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/vknORbvDXVUatwXg5kquCtyuXKN2/social-images/social-1785808354505-social-image.webp" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
