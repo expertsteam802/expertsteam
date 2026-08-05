@@ -15,6 +15,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteUserAccount } from "@/lib/accounts.functions";
 import { formatBytes, formatDate } from "@/lib/format";
+import { paymentMethodLabel, type UpgradeRequest } from "@/lib/subscription";
+
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
