@@ -308,7 +308,54 @@ function AdminPage() {
               )}
             </Card>
           </TabsContent>
+
+          <TabsContent value="payments" className="pt-6">
+            <div className="space-y-3">
+              {(upgrades ?? []).map((request) => (
+                <Card key={request.id} className="gap-3 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">
+                        {request.profiles?.display_name || request.profiles?.username || "Member"} · $
+                        {Number(request.amount).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {paymentMethodLabel(request.method)} · ref {request.reference} ·{" "}
+                        {formatDate(request.created_at)} · {request.status}
+                      </p>
+                      {request.note && (
+                        <p className="mt-1 text-xs text-muted-foreground">“{request.note}”</p>
+                      )}
+                    </div>
+                    {request.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={reviewUpgrade.isPending}
+                          onClick={() => reviewUpgrade.mutate({ request, approve: true })}
+                        >
+                          Confirm payment
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewUpgrade.isPending}
+                          onClick={() => reviewUpgrade.mutate({ request, approve: false })}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+              {!upgrades?.length && (
+                <p className="text-sm text-muted-foreground">No subscription payments submitted yet.</p>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
+
       </section>
     </PageShell>
   );
