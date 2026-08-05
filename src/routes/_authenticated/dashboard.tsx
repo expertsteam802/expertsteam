@@ -8,7 +8,9 @@ import { toast } from "sonner";
 import { AddVideoDialog } from "@/components/add-video-dialog";
 import { FileGrid, type CommunityFile } from "@/components/file-grid";
 import { PageShell } from "@/components/layout/page-shell";
+import { UpgradeDialog } from "@/components/upgrade-dialog";
 import { UploadDialog } from "@/components/upload-dialog";
+
 import { VideoGrid, type VideoItem } from "@/components/video-grid";
 import {
   AlertDialog,
