@@ -223,7 +223,9 @@ function AdminPage() {
             <TabsTrigger value="branding">Branding & pricing</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="sessions">Sign-in log</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="branding" className="pt-6">
             <Card className="max-w-2xl gap-4 p-6">
