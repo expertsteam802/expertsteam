@@ -22,6 +22,7 @@ const TABS = [
   { to: "/entertainment", label: "Entertainment" },
   { to: "/learn", label: "Learn to code" },
   { to: "/contact", label: "Contact" },
+  { to: "/ai", label: "Chris AI" },
 ] as const;
 
 const ALIGN: Record<NavAlign, string> = {
