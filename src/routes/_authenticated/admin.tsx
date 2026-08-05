@@ -131,6 +131,50 @@ function AdminPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const { data: upgrades } = useQuery({
+    queryKey: ["admin", "upgrades"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscription_requests")
+        .select("*, profiles(username, display_name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as Array<
+        UpgradeRequest & { profiles: { username: string; display_name: string | null } | null }
+      >;
+    },
+  });
+
+  const reviewUpgrade = useMutation({
+    mutationFn: async ({ request, approve }: { request: UpgradeRequest; approve: boolean }) => {
+      const { error } = await supabase
+        .from("subscription_requests")
+        .update({
+          status: approve ? "approved" : "declined",
+          reviewed_by: user?.id ?? null,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", request.id);
+      if (error) throw error;
+
+      if (approve) {
+        const quota = Number(settings?.subscription_quota_bytes ?? 2147483648);
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ is_subscribed: true, storage_quota_bytes: quota })
+          .eq("id", request.user_id);
+        if (profileError) throw profileError;
+      }
+    },
+    onSuccess: (_data, variables) => {
+      toast.success(variables.approve ? "Payment confirmed — space unlocked" : "Payment declined");
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const deleteMember = useMutation({
     mutationFn: async (userId: string) => {
       await removeAccount({ data: { userId } });
@@ -141,6 +185,7 @@ function AdminPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
 
   if (!isAdmin) {
     return (
