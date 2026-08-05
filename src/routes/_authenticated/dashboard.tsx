@@ -8,7 +8,9 @@ import { toast } from "sonner";
 import { AddVideoDialog } from "@/components/add-video-dialog";
 import { FileGrid, type CommunityFile } from "@/components/file-grid";
 import { PageShell } from "@/components/layout/page-shell";
+import { UpgradeDialog } from "@/components/upgrade-dialog";
 import { UploadDialog } from "@/components/upload-dialog";
+
 import { VideoGrid, type VideoItem } from "@/components/video-grid";
 import {
   AlertDialog,
@@ -168,13 +170,11 @@ function DashboardPage() {
           <p className="text-sm text-muted-foreground">
             {profile?.is_subscribed
               ? "Subscriber — extra upload space unlocked."
-              : `Free member. Subscription costs $${Number(settings.subscription_price).toFixed(2)} for ${formatBytes(settings.subscription_quota_bytes)} of space.`}
+              : `Free member. $${Number(settings.subscription_price).toFixed(2)} unlocks ${formatBytes(settings.subscription_quota_bytes)} of space.`}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Card and PayPal checkout is being connected next — the price and payout account are already
-            controlled from the admin panel.
-          </p>
+          <UpgradeDialog />
         </Card>
+
         <Card className="gap-3 p-6">
           <h2 className="font-display font-semibold">Recent sign-in activity</h2>
           <ul className="space-y-1 text-sm text-muted-foreground">

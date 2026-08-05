@@ -15,6 +15,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { deleteUserAccount } from "@/lib/accounts.functions";
 import { formatBytes, formatDate } from "@/lib/format";
+import { paymentMethodLabel, type UpgradeRequest } from "@/lib/subscription";
+
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
@@ -131,6 +133,50 @@ function AdminPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const { data: upgrades } = useQuery({
+    queryKey: ["admin", "upgrades"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscription_requests")
+        .select("*, profiles(username, display_name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as Array<
+        UpgradeRequest & { profiles: { username: string; display_name: string | null } | null }
+      >;
+    },
+  });
+
+  const reviewUpgrade = useMutation({
+    mutationFn: async ({ request, approve }: { request: UpgradeRequest; approve: boolean }) => {
+      const { error } = await supabase
+        .from("subscription_requests")
+        .update({
+          status: approve ? "approved" : "declined",
+          reviewed_by: user?.id ?? null,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", request.id);
+      if (error) throw error;
+
+      if (approve) {
+        const quota = Number(settings?.subscription_quota_bytes ?? 2147483648);
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .update({ is_subscribed: true, storage_quota_bytes: quota })
+          .eq("id", request.user_id);
+        if (profileError) throw profileError;
+      }
+    },
+    onSuccess: (_data, variables) => {
+      toast.success(variables.approve ? "Payment confirmed — space unlocked" : "Payment declined");
+      void queryClient.invalidateQueries({ queryKey: ["admin"] });
+      void queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const deleteMember = useMutation({
     mutationFn: async (userId: string) => {
       await removeAccount({ data: { userId } });
@@ -141,6 +187,7 @@ function AdminPage() {
     },
     onError: (error: Error) => toast.error(error.message),
   });
+
 
   if (!isAdmin) {
     return (
@@ -176,7 +223,9 @@ function AdminPage() {
             <TabsTrigger value="branding">Branding & pricing</TabsTrigger>
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="sessions">Sign-in log</TabsTrigger>
+            <TabsTrigger value="payments">Payments</TabsTrigger>
           </TabsList>
+
 
           <TabsContent value="branding" className="pt-6">
             <Card className="max-w-2xl gap-4 p-6">
@@ -261,7 +310,54 @@ function AdminPage() {
               )}
             </Card>
           </TabsContent>
+
+          <TabsContent value="payments" className="pt-6">
+            <div className="space-y-3">
+              {(upgrades ?? []).map((request) => (
+                <Card key={request.id} className="gap-3 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">
+                        {request.profiles?.display_name || request.profiles?.username || "Member"} · $
+                        {Number(request.amount).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {paymentMethodLabel(request.method)} · ref {request.reference} ·{" "}
+                        {formatDate(request.created_at)} · {request.status}
+                      </p>
+                      {request.note && (
+                        <p className="mt-1 text-xs text-muted-foreground">“{request.note}”</p>
+                      )}
+                    </div>
+                    {request.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={reviewUpgrade.isPending}
+                          onClick={() => reviewUpgrade.mutate({ request, approve: true })}
+                        >
+                          Confirm payment
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewUpgrade.isPending}
+                          onClick={() => reviewUpgrade.mutate({ request, approve: false })}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+              {!upgrades?.length && (
+                <p className="text-sm text-muted-foreground">No subscription payments submitted yet.</p>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
+
       </section>
     </PageShell>
   );
