@@ -88,6 +88,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "author", content: "Chris Expert" },
       {
+        name: "google-site-verification",
+        content: "YdY2ygzprZLok7-Cvwg_j29cI4ycK480HDQmh0d-JIg",
+      },
+      {
         name: "keywords",
         content:
           "chrisprograms, chris programs, chris expert, expertchris, learn coding, coding lessons, game downloads",
