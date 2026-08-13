@@ -398,6 +398,51 @@ function AdminPage() {
               )}
             </div>
           </TabsContent>
+
+          <TabsContent value="developers" className="pt-6">
+            <div className="space-y-3">
+              {(projectRequests ?? []).map((request) => (
+                <Card key={request.id} className="gap-2 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">
+                        {request.title} ·{" "}
+                        {request.profiles?.display_name || request.profiles?.username || "Member"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(request.created_at)} · {request.status}
+                        {request.skills ? ` · ${request.skills}` : ""}
+                        {request.contact ? ` · ${request.contact}` : ""}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">{request.summary}</p>
+                    </div>
+                    {request.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={reviewProject.isPending}
+                          onClick={() => reviewProject.mutate({ id: request.id, approve: true })}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewProject.isPending}
+                          onClick={() => reviewProject.mutate({ id: request.id, approve: false })}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+              {!projectRequests?.length && (
+                <p className="text-sm text-muted-foreground">No developer applications yet.</p>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
 
       </section>
