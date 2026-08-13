@@ -265,6 +265,7 @@ function AdminPage() {
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="sessions">Sign-in log</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
+            <TabsTrigger value="developers">Developer requests</TabsTrigger>
           </TabsList>
 
 
