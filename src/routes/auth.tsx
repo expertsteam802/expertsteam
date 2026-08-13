@@ -95,6 +95,25 @@ function AuthPage() {
     toast.success("Account created!");
   }
 
+  async function verifyCode(): Promise<void> {
+    if (code.trim().length < 6) {
+      toast.error("Enter the 6-digit code from your email.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code.trim(),
+      type: "signup",
+    });
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Email verified — welcome to Chris Programs!");
+  }
+
   async function google() {
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
