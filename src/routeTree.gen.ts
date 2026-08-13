@@ -13,9 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CommunityRouteImport } from './routes/community'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as EntertainmentRouteImport } from './routes/entertainment'
 import { Route as LearnRouteImport } from './routes/learn'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as VideosRouteImport } from './routes/videos'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -39,6 +41,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CommunityRoute = CommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
@@ -52,6 +59,11 @@ const EntertainmentRoute = EntertainmentRouteImport.update({
 const LearnRoute = LearnRouteImport.update({
   id: '/learn',
   path: '/learn',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VideosRoute = VideosRouteImport.update({
@@ -74,9 +86,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/ai': typeof AiRoute
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/entertainment': typeof EntertainmentRoute
   '/learn': typeof LearnRoute
+  '/projects': typeof ProjectsRoute
   '/videos': typeof VideosRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -85,9 +99,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/ai': typeof AiRoute
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/entertainment': typeof EntertainmentRoute
   '/learn': typeof LearnRoute
+  '/projects': typeof ProjectsRoute
   '/videos': typeof VideosRoute
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -98,9 +114,11 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/ai': typeof AiRoute
   '/auth': typeof AuthRoute
+  '/community': typeof CommunityRoute
   '/contact': typeof ContactRoute
   '/entertainment': typeof EntertainmentRoute
   '/learn': typeof LearnRoute
+  '/projects': typeof ProjectsRoute
   '/videos': typeof VideosRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -111,9 +129,11 @@ export interface FileRouteTypes {
     | '/'
     | '/ai'
     | '/auth'
+    | '/community'
     | '/contact'
     | '/entertainment'
     | '/learn'
+    | '/projects'
     | '/videos'
     | '/admin'
     | '/dashboard'
@@ -122,9 +142,11 @@ export interface FileRouteTypes {
     | '/'
     | '/ai'
     | '/auth'
+    | '/community'
     | '/contact'
     | '/entertainment'
     | '/learn'
+    | '/projects'
     | '/videos'
     | '/admin'
     | '/dashboard'
@@ -134,9 +156,11 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/ai'
     | '/auth'
+    | '/community'
     | '/contact'
     | '/entertainment'
     | '/learn'
+    | '/projects'
     | '/videos'
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
@@ -147,9 +171,11 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AiRoute: typeof AiRoute
   AuthRoute: typeof AuthRoute
+  CommunityRoute: typeof CommunityRoute
   ContactRoute: typeof ContactRoute
   EntertainmentRoute: typeof EntertainmentRoute
   LearnRoute: typeof LearnRoute
+  ProjectsRoute: typeof ProjectsRoute
   VideosRoute: typeof VideosRoute
 }
 
@@ -183,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/community': {
+      id: '/community'
+      path: '/community'
+      fullPath: '/community'
+      preLoaderRoute: typeof CommunityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contact': {
       id: '/contact'
       path: '/contact'
@@ -202,6 +235,13 @@ declare module '@tanstack/react-router' {
       path: '/learn'
       fullPath: '/learn'
       preLoaderRoute: typeof LearnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/videos': {
@@ -246,11 +286,23 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AiRoute: AiRoute,
   AuthRoute: AuthRoute,
+  CommunityRoute: CommunityRoute,
   ContactRoute: ContactRoute,
   EntertainmentRoute: EntertainmentRoute,
   LearnRoute: LearnRoute,
+  ProjectsRoute: ProjectsRoute,
   VideosRoute: VideosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

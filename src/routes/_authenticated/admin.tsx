@@ -177,6 +177,47 @@ function AdminPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const { data: projectRequests } = useQuery({
+    queryKey: ["admin", "project-requests"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_requests")
+        .select("*, profiles(username, display_name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as Array<{
+        id: string;
+        title: string;
+        summary: string;
+        skills: string | null;
+        contact: string | null;
+        status: string;
+        created_at: string;
+        profiles: { username: string; display_name: string | null } | null;
+      }>;
+    },
+  });
+
+  const reviewProject = useMutation({
+    mutationFn: async ({ id, approve }: { id: string; approve: boolean }) => {
+      const { error } = await supabase
+        .from("project_requests")
+        .update({
+          status: approve ? "approved" : "declined",
+          reviewed_by: user?.id ?? null,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      toast.success(variables.approve ? "Developer accepted" : "Application declined");
+      void queryClient.invalidateQueries({ queryKey: ["admin", "project-requests"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const deleteMember = useMutation({
     mutationFn: async (userId: string) => {
       await removeAccount({ data: { userId } });
@@ -224,6 +265,7 @@ function AdminPage() {
             <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="sessions">Sign-in log</TabsTrigger>
             <TabsTrigger value="payments">Payments</TabsTrigger>
+            <TabsTrigger value="developers">Developer requests</TabsTrigger>
           </TabsList>
 
 
@@ -353,6 +395,51 @@ function AdminPage() {
               ))}
               {!upgrades?.length && (
                 <p className="text-sm text-muted-foreground">No subscription payments submitted yet.</p>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="developers" className="pt-6">
+            <div className="space-y-3">
+              {(projectRequests ?? []).map((request) => (
+                <Card key={request.id} className="gap-2 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">
+                        {request.title} ·{" "}
+                        {request.profiles?.display_name || request.profiles?.username || "Member"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(request.created_at)} · {request.status}
+                        {request.skills ? ` · ${request.skills}` : ""}
+                        {request.contact ? ` · ${request.contact}` : ""}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">{request.summary}</p>
+                    </div>
+                    {request.status === "pending" && (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={reviewProject.isPending}
+                          onClick={() => reviewProject.mutate({ id: request.id, approve: true })}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={reviewProject.isPending}
+                          onClick={() => reviewProject.mutate({ id: request.id, approve: false })}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+              {!projectRequests?.length && (
+                <p className="text-sm text-muted-foreground">No developer applications yet.</p>
               )}
             </div>
           </TabsContent>
