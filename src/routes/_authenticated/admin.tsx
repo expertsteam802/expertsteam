@@ -177,6 +177,47 @@ function AdminPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
+  const { data: projectRequests } = useQuery({
+    queryKey: ["admin", "project-requests"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("project_requests")
+        .select("*, profiles(username, display_name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as Array<{
+        id: string;
+        title: string;
+        summary: string;
+        skills: string | null;
+        contact: string | null;
+        status: string;
+        created_at: string;
+        profiles: { username: string; display_name: string | null } | null;
+      }>;
+    },
+  });
+
+  const reviewProject = useMutation({
+    mutationFn: async ({ id, approve }: { id: string; approve: boolean }) => {
+      const { error } = await supabase
+        .from("project_requests")
+        .update({
+          status: approve ? "approved" : "declined",
+          reviewed_by: user?.id ?? null,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, variables) => {
+      toast.success(variables.approve ? "Developer accepted" : "Application declined");
+      void queryClient.invalidateQueries({ queryKey: ["admin", "project-requests"] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const deleteMember = useMutation({
     mutationFn: async (userId: string) => {
       await removeAccount({ data: { userId } });
