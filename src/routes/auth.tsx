@@ -175,10 +175,26 @@ function AuthPage() {
 
             <TabsContent value="signup" className="space-y-4 pt-4">
               {emailSent ? (
-                <p className="rounded-lg border border-border bg-secondary p-4 text-sm">
-                  We sent a confirmation link to <strong>{email}</strong>. Click it to activate your
-                  account, then sign in.
-                </p>
+                <div className="space-y-3">
+                  <p className="rounded-lg border border-border bg-secondary p-4 text-sm">
+                    We emailed a 6-digit verification code to <strong>{email}</strong>. Enter it below to
+                    activate your account (the emailed link also works).
+                  </p>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-code">Verification code</Label>
+                    <Input
+                      id="signup-code"
+                      inputMode="numeric"
+                      maxLength={8}
+                      placeholder="123456"
+                      value={code}
+                      onChange={(event) => setCode(event.target.value)}
+                    />
+                  </div>
+                  <Button className="w-full" onClick={() => void verifyCode()} disabled={busy}>
+                    Verify email
+                  </Button>
+                </div>
               ) : (
                 <>
                   <div className="space-y-2">
