@@ -38,6 +38,7 @@ function AuthPage() {
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [code, setCode] = useState("");
 
   const challenge = useMemo(() => {
     const a = Math.floor(Math.random() * 8) + 2;
