@@ -189,12 +189,81 @@ export function ChrisAiChat() {
   );
 }
 
+type SnippetRow = {
+  id: string;
+  title: string;
+  language: string;
+  prompt: string | null;
+  code: string;
+  updated_at: string;
+};
+
 export function ChrisAiWorkspace() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const ask = useServerFn(askChrisAi);
   const [brief, setBrief] = useState("");
   const [code, setCode] = useState("");
+  const [title, setTitle] = useState("");
+  const [snippetId, setSnippetId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const { data: snippets = [] } = useQuery({
+    queryKey: ["ai-snippets", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_snippets")
+        .select("id, title, language, prompt, code, updated_at")
+        .order("updated_at", { ascending: false });
+      if (error) throw error;
+      return data as SnippetRow[];
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!code.trim()) throw new Error("Nothing to save yet.");
+      const payload = {
+        user_id: user!.id,
+        title: (title.trim() || brief.trim().slice(0, 60) || "Untitled snippet").slice(0, 120),
+        prompt: brief.trim() ? brief.trim().slice(0, 2000) : null,
+        code: code.slice(0, 40000),
+      };
+      if (snippetId) {
+        const { error } = await supabase.from("ai_snippets").update(payload).eq("id", snippetId);
+        if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from("ai_snippets").insert(payload).select("id").single();
+        if (error) throw error;
+        setSnippetId(data.id);
+      }
+    },
+    onSuccess: () => {
+      toast.success("Progress saved");
+      void queryClient.invalidateQueries({ queryKey: ["ai-snippets", user?.id] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const removeSnippet = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("ai_snippets").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, id) => {
+      if (snippetId === id) setSnippetId(null);
+      void queryClient.invalidateQueries({ queryKey: ["ai-snippets", user?.id] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  function load(snippet: SnippetRow) {
+    setSnippetId(snippet.id);
+    setTitle(snippet.title);
+    setBrief(snippet.prompt ?? "");
+    setCode(snippet.code);
+  }
 
   async function generate() {
     if (!brief.trim()) return;
@@ -208,6 +277,7 @@ export function ChrisAiWorkspace() {
       setBusy(false);
     }
   }
+
 
   if (!user) {
     return (

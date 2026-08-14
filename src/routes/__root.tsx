@@ -103,11 +103,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:title", content: "Chris Programs — Watch, Learn & Share Code" },
       { property: "og:description", content: "Chris Programs is the home of Chris Expert: watch every channel video inside the site, download games and resources, learn to code and join the community." },
       { name: "twitter:description", content: "Chris Programs is the home of Chris Expert: watch every channel video inside the site, download games and resources, learn to code and join the community." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/vknORbvDXVUatwXg5kquCtyuXKN2/social-images/social-1785808354505-social-image.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/vknORbvDXVUatwXg5kquCtyuXKN2/social-images/social-1785808354505-social-image.webp" },
+      { property: "og:image", content: "https://chrisprograms.lovable.app/social-preview.png" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { property: "og:image:alt", content: "Chris Programs logo" },
+      { name: "twitter:image", content: "https://chrisprograms.lovable.app/social-preview.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/logo.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
