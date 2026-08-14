@@ -22,7 +22,7 @@ const TABS = [
   { to: "/entertainment", label: "Entertainment" },
   { to: "/learn", label: "Learn to code" },
   { to: "/community", label: "Community" },
-  { to: "/projects", label: "Developers" },
+  { to: "/projects", label: "Workspace" },
   { to: "/ai", label: "Chris AI" },
   { to: "/contact", label: "Contact" },
 ] as const;
@@ -43,13 +43,11 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
         <Link to="/" className="flex shrink-0 items-center gap-2">
-          {settings.logo_url ? (
-            <img src={settings.logo_url} alt={settings.site_name} className="h-9 w-9 rounded-lg object-cover" />
-          ) : (
-            <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary font-display text-lg font-bold text-primary-foreground">
-              C
-            </span>
-          )}
+          <img
+            src={settings.logo_url || "/logo.png"}
+            alt={`${settings.site_name} logo`}
+            className="h-10 w-10 rounded-full object-cover ring-1 ring-primary/50"
+          />
           <span className="font-display text-lg font-semibold tracking-tight">{settings.site_name}</span>
         </Link>
 
