@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Bot, Code2, Copy, Loader2, Send, Sparkles, Trash2, User } from "lucide-react";
+import { Bot, Code2, Copy, Loader2, Save, Send, Sparkles, Trash2, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -289,42 +290,84 @@ export function ChrisAiWorkspace() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
-      <Card className="glow-panel space-y-3 p-4">
-        <h2 className="font-display text-lg font-semibold">Build brief</h2>
-        <Textarea
-          rows={8}
-          value={brief}
-          placeholder="Describe what to build: a Python game loop, an HTML landing page, a PC benchmark script…"
-          onChange={(event) => setBrief(event.target.value)}
-        />
-        <Button onClick={() => void generate()} disabled={busy} className="w-full">
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-          Generate code
-        </Button>
-      </Card>
-      <Card className="glow-panel space-y-3 p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold">Workspace</h2>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={!code}
-            onClick={() => {
-              void navigator.clipboard.writeText(code);
-              toast.success("Copied to clipboard");
-            }}
-          >
-            <Copy className="mr-2 h-3.5 w-3.5" /> Copy
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="glow-panel space-y-3 p-4">
+          <h2 className="font-display text-lg font-semibold">Build brief</h2>
+          <Input
+            value={title}
+            placeholder="Snippet name (e.g. map editor loader)"
+            onChange={(event) => setTitle(event.target.value)}
+          />
+          <Textarea
+            rows={7}
+            value={brief}
+            placeholder="Describe what to build: a Python game loop, an HTML landing page, a PC benchmark script…"
+            onChange={(event) => setBrief(event.target.value)}
+          />
+          <Button onClick={() => void generate()} disabled={busy} className="w-full">
+            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+            Generate code
           </Button>
+        </Card>
+        <Card className="glow-panel space-y-3 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-display text-lg font-semibold">Workspace</h2>
+            <div className="flex gap-2">
+              <Button variant="secondary" size="sm" disabled={!code || save.isPending} onClick={() => save.mutate()}>
+                <Save className="mr-2 h-3.5 w-3.5" /> {snippetId ? "Update" : "Save"}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!code}
+                onClick={() => {
+                  void navigator.clipboard.writeText(code);
+                  toast.success("Copied to clipboard");
+                }}
+              >
+                <Copy className="mr-2 h-3.5 w-3.5" /> Copy
+              </Button>
+            </div>
+          </div>
+          <Textarea
+            rows={16}
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            placeholder="Generated code appears here and stays editable."
+            className="font-mono text-xs"
+          />
+        </Card>
+      </div>
+
+      <Card className="space-y-2 p-4">
+        <h2 className="font-display text-lg font-semibold">Saved progress</h2>
+        {!snippets.length && (
+          <p className="text-sm text-muted-foreground">
+            Nothing saved yet — generate code and hit Save to keep your progress in your account.
+          </p>
+        )}
+        <div className="grid gap-2 sm:grid-cols-2">
+          {snippets.map((snippet) => (
+            <div
+              key={snippet.id}
+              className="flex items-center justify-between gap-2 rounded-lg border border-border bg-secondary/50 p-3"
+            >
+              <button onClick={() => load(snippet)} className="min-w-0 flex-1 text-left">
+                <p className="truncate text-sm font-medium">{snippet.title}</p>
+                <p className="text-xs text-muted-foreground">Updated {snippet.updated_at.slice(0, 10)}</p>
+              </button>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={`Delete ${snippet.title}`}
+                onClick={() => removeSnippet.mutate(snippet.id)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
         </div>
-        <Textarea
-          rows={16}
-          value={code}
-          onChange={(event) => setCode(event.target.value)}
-          placeholder="Generated code appears here and stays editable."
-          className="font-mono text-xs"
-        />
       </Card>
     </div>
   );
