@@ -242,10 +242,81 @@ export type Database = {
           },
         ]
       }
+      invite_links: {
+        Row: {
+          active: boolean
+          ai_credits: number
+          bonus_bytes: number
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          max_uses: number
+          uses: number
+        }
+        Insert: {
+          active?: boolean
+          ai_credits?: number
+          bonus_bytes?: number
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          max_uses?: number
+          uses?: number
+        }
+        Update: {
+          active?: boolean
+          ai_credits?: number
+          bonus_bytes?: number
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          max_uses?: number
+          uses?: number
+        }
+        Relationships: []
+      }
+      invite_redemptions: {
+        Row: {
+          created_at: string
+          id: string
+          invite_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invite_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invite_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invite_redemptions_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "invite_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
+          ai_credits: number
+          ai_subscribed: boolean
           avatar_url: string | null
           bio: string | null
+          bonus_bytes: number
           created_at: string
           display_name: string | null
           id: string
@@ -256,8 +327,11 @@ export type Database = {
           username: string
         }
         Insert: {
+          ai_credits?: number
+          ai_subscribed?: boolean
           avatar_url?: string | null
           bio?: string | null
+          bonus_bytes?: number
           created_at?: string
           display_name?: string | null
           id: string
@@ -268,8 +342,11 @@ export type Database = {
           username: string
         }
         Update: {
+          ai_credits?: number
+          ai_subscribed?: boolean
           avatar_url?: string | null
           bio?: string | null
+          bonus_bytes?: number
           created_at?: string
           display_name?: string | null
           id?: string
@@ -336,6 +413,8 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          ai_subscription_credits: number
+          ai_subscription_price: number
           id: number
           instagram_url: string
           logo_url: string | null
@@ -349,6 +428,8 @@ export type Database = {
           youtube_url: string
         }
         Insert: {
+          ai_subscription_credits?: number
+          ai_subscription_price?: number
           id?: number
           instagram_url?: string
           logo_url?: string | null
@@ -362,6 +443,8 @@ export type Database = {
           youtube_url?: string
         }
         Update: {
+          ai_subscription_credits?: number
+          ai_subscription_price?: number
           id?: number
           instagram_url?: string
           logo_url?: string | null
@@ -381,6 +464,7 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          kind: string
           method: string
           note: string | null
           reference: string
@@ -394,6 +478,7 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          kind?: string
           method?: string
           note?: string | null
           reference: string
@@ -407,6 +492,7 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          kind?: string
           method?: string
           note?: string | null
           reference?: string
@@ -563,6 +649,30 @@ export type Database = {
           },
         ]
       }
+      workspace_roles: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -576,6 +686,7 @@ export type Database = {
         Returns: boolean
       }
       is_workspace_member: { Args: { _user_id: string }; Returns: boolean }
+      redeem_invite: { Args: { _code: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "developer" | "member"
