@@ -35,11 +35,15 @@ function AiPage() {
           </p>
         </div>
 
-        <Tabs defaultValue="chat" className="mt-6">
+        <Tabs defaultValue="agent" className="mt-6">
           <TabsList>
+            <TabsTrigger value="agent">App builder agent</TabsTrigger>
             <TabsTrigger value="chat">Chat</TabsTrigger>
-            <TabsTrigger value="workspace">Code workspace</TabsTrigger>
+            <TabsTrigger value="workspace">Snippets</TabsTrigger>
           </TabsList>
+          <TabsContent value="agent" className="pt-4">
+            <CodeAgent />
+          </TabsContent>
           <TabsContent value="chat" className="pt-4">
             <ChrisAiChat />
           </TabsContent>
