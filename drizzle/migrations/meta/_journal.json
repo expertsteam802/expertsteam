@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793360619164,
+      "tag": "0000_agent_projects_contacts_roles",
+      "breakpoints": true
+    }
+  ]
+}

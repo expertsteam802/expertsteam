@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_projects: {
+        Row: {
+          created_at: string
+          files: Json
+          github_repo: string | null
+          id: string
+          messages: Json
+          name: string
+          published: boolean
+          slug: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          files?: Json
+          github_repo?: string | null
+          id?: string
+          messages?: Json
+          name?: string
+          published?: boolean
+          slug?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          files?: Json
+          github_repo?: string | null
+          id?: string
+          messages?: Json
+          name?: string
+          published?: boolean
+          slug?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_chats: {
         Row: {
           content: string
@@ -511,6 +550,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_contacts: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          link: string | null
+          name: string
+          phone: string | null
+          role: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          link?: string | null
+          name: string
+          phone?: string | null
+          role?: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          link?: string | null
+          name?: string
+          phone?: string | null
+          role?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
