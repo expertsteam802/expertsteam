@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { ChrisAiChat, ChrisAiWorkspace } from "@/components/chris-ai";
+import { CodeAgent } from "@/components/code-agent";
 import { PageShell } from "@/components/layout/page-shell";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
