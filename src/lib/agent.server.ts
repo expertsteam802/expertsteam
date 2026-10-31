@@ -5,67 +5,45 @@ type AgentInput = {
 };
 
 const AGENT_PROMPT = `You are the Experts Team coding agent, built into the Experts Team website created by Chris Expert - M.Chris.T.
-You build small web apps made of multiple files (HTML, CSS, JavaScript, plus any extra files like README.md or data.json).
-The app runs in a browser sandbox: index.html is the entry; reference local files with relative paths like "style.css" or "script.js". No build step, no npm. CDN scripts are allowed.
+You build browser-based websites, dashboards, tools, and 2D/3D games made of multiple files (HTML, CSS, JavaScript, plus any extra files like README.md or data.json).
+The app runs in a browser sandbox: index.html is the entry; reference local files with relative paths like "style.css" or "script.js". No build step, no npm. CDN scripts are allowed. Use browser libraries such as Three.js or Phaser when suitable. Make complete working apps, not placeholders. If asked for a framework requiring a build step or a native app, explain that this sandbox only executes browser-ready files; never claim a framework build has been tested.
 Always reply with a JSON object: {"message": "short summary of what you did", "files": {"path": "full file content", ...}}.
 Include ONLY files you created or changed, each with its FULL content. To delete a file set its value to null.
 Always write the creator's name as "Chris" (never "Chriss").`;
 
-export async function runAgent({ prompt, files, history }: AgentInput) {
-  const apiKey = process.env["LOVABLE_API_KEY"];
-  if (!apiKey) return { message: "The agent is not configured yet.", files: {} };
+export async function runAgent({ prompt, files, history }: AgentInput, apiKey?: string) {
+  if (!apiKey) throw new Error("The site owner needs to connect a Gemini API key before using the agent.");
 
   const fileDump = Object.entries(files)
     .map(([name, content]) => `--- ${name} ---\n${content}`)
     .join("\n\n")
     .slice(0, 60000);
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent", {
     method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "openai/gpt-6-astra",
-      stream: true,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: AGENT_PROMPT },
-        ...history,
-        { role: "user", content: `Current project files:\n${fileDump || "(empty)"}\n\nRequest: ${prompt}` },
+      systemInstruction: { parts: [{ text: AGENT_PROMPT }] },
+      generationConfig: { responseMimeType: "application/json" },
+      contents: [
+        ...history.map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
+        { role: "user", parts: [{ text: `Current project files:\n${fileDump || "(empty)"}\n\nRequest: ${prompt}` }] },
       ],
     }),
+    signal: AbortSignal.timeout(120000),
   });
 
-  if (response.status === 429) return { message: "The agent is busy (rate limit). Try again in a moment.", files: {} };
-  if (response.status === 402)
-    return { message: "AI credits for this site are used up. The site owner needs to add credits.", files: {} };
-  if (!response.ok || !response.body) {
-    console.error("Agent gateway error", response.status, await response.text());
-    return { message: "The agent could not finish that request. Please try again.", files: {} };
+  if (response.status === 429) throw new Error("Gemini's free quota or rate limit has been reached. Try again later; no paid AI fallback was used.");
+  if (response.status === 400 || response.status === 401 || response.status === 403) {
+    throw new Error("Gemini rejected this request. The site owner should check the API key and its Google AI Studio access.");
   }
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let text = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith("data:")) continue;
-      const payload = trimmed.slice(5).trim();
-      if (payload === "[DONE]") continue;
-      try {
-        const json = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] };
-        text += json.choices?.[0]?.delta?.content ?? "";
-      } catch {
-        /* partial chunk */
-      }
-    }
-  }
+  if (!response.ok) throw new Error("Gemini could not finish that request. Please try again.");
+  const json = (await response.json()) as {
+    candidates?: { finishReason?: string; content?: { parts?: { text?: string; thought?: boolean }[] } }[];
+  };
+  const candidate = json.candidates?.[0];
+  if (candidate?.finishReason === "MAX_TOKENS") throw new Error("Gemini's answer was too large. Ask for a smaller change; your files were not replaced.");
+  const text = candidate?.content?.parts?.filter((part) => !part.thought).map((part) => part.text ?? "").join("") ?? "";
 
   try {
     const match = text.match(/\{[\s\S]*\}/);
@@ -73,9 +51,15 @@ export async function runAgent({ prompt, files, history }: AgentInput) {
       message?: string;
       files?: Record<string, string | null>;
     };
-    return { message: parsed.message ?? "Done.", files: parsed.files ?? {} };
+    if (!parsed.files || typeof parsed.files !== "object" || Array.isArray(parsed.files)) throw new Error("Invalid files");
+    const output: Record<string, string | null> = {};
+    for (const [path, content] of Object.entries(parsed.files)) {
+      if (typeof content !== "string" && content !== null) throw new Error("Invalid file content");
+      output[path] = content;
+    }
+    return { message: typeof parsed.message === "string" ? parsed.message : "Done.", files: output };
   } catch {
-    return { message: text.trim() || "The agent returned an empty answer.", files: {} };
+    throw new Error("Gemini did not return complete app files. Try a smaller request; your existing files were not changed.");
   }
 }
 

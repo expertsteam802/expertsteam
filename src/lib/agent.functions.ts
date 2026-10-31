@@ -22,7 +22,7 @@ export const askAgent = createServerFn({ method: "POST" })
       };
     },
   )
-  .handler(async ({ data }) => runAgent(data));
+  .handler(async ({ data }) => runAgent(data, process.env["GEMINI_API_KEY"]));
 
 export const pushProjectToGithub = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
