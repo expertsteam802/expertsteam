@@ -10,13 +10,17 @@ import {
   Github,
   Globe,
   Loader2,
+  Monitor,
+  Smartphone,
+  Tablet,
+  Terminal,
   Play,
   Plus,
   Save,
   Send,
   Trash2,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,7 +33,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { askAgent, pushProjectToGithub } from "@/lib/agent.functions";
-import { buildSrcDoc, slugify, STARTER_FILES, type ProjectFiles } from "@/lib/sandbox";
+import { buildSrcDocWithConsole, slugify, STARTER_FILES, type ProjectFiles } from "@/lib/sandbox";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type ProjectRow = {
@@ -57,13 +61,25 @@ export function CodeAgent() {
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
-  const [view, setView] = useState<"code" | "preview">("preview");
+  const [view, setView] = useState<"code" | "preview" | "console">("preview");
+  const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  const [logs, setLogs] = useState<{ type: string; message: string }[]>([]);
+  const [pagesUrl, setPagesUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data as { __agentConsole?: boolean; type: string; message: string };
+      if (d && d.__agentConsole) setLogs((l) => [...l.slice(-199), { type: d.type, message: d.message }]);
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
   const [published, setPublished] = useState<{ on: boolean; slug: string | null }>({ on: false, slug: null });
   const [ghOpen, setGhOpen] = useState(false);
   const [ghToken, setGhToken] = useState("");
   const [ghRepo, setGhRepo] = useState("");
 
-  const srcDoc = useMemo(() => buildSrcDoc(files), [files]);
+  const srcDoc = useMemo(() => buildSrcDocWithConsole(files), [files]);
 
   const { data: projects = [] } = useQuery({
     queryKey: ["agent-projects", user?.id],
@@ -165,6 +181,7 @@ export function CodeAgent() {
       const result = await push({ data: { token: ghToken, repo: ghRepo, files } });
       if (!result.ok) throw new Error(result.error);
       await persist({ extra: { github_repo: result.url } });
+      setPagesUrl(result.pagesUrl);
       return result.url;
     },
     onSuccess: (url) => {
@@ -236,6 +253,11 @@ export function CodeAgent() {
         <Button size="sm" onClick={() => publish.mutate(!published.on)} disabled={publish.isPending}>
           <Globe className="mr-1 h-3.5 w-3.5" /> {published.on ? "Unpublish" : "Publish"}
         </Button>
+        {pagesUrl && (
+          <a href={pagesUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+            <Github className="h-3 w-3" /> GitHub Pages
+          </a>
+        )}
         {liveUrl && (
           <Link
             to="/apps/$slug"
@@ -316,9 +338,30 @@ export function CodeAgent() {
             <Button size="sm" variant={view === "code" ? "default" : "ghost"} onClick={() => setView("code")}>
               <FileCode2 className="mr-1 h-3.5 w-3.5" /> Code
             </Button>
+            <Button size="sm" variant={view === "console" ? "default" : "ghost"} onClick={() => setView("console")}>
+              <Terminal className="mr-1 h-3.5 w-3.5" /> Console
+              {logs.some((l) => l.type === "error") && <span className="ml-1 h-2 w-2 rounded-full bg-destructive" />}
+            </Button>
+            {view === "preview" && (
+              <div className="ml-2 flex gap-0.5">
+                {([
+                  ["desktop", Monitor],
+                  ["tablet", Tablet],
+                  ["mobile", Smartphone],
+                ] as const).map(([d, Icon]) => (
+                  <Button key={d} size="icon" variant={device === d ? "secondary" : "ghost"} className="h-8 w-8" aria-label={`${d} view`} onClick={() => setDevice(d)}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </Button>
+                ))}
+              </div>
+            )}
             <div className="ml-auto flex gap-1">
-              {view === "preview" ? (
-                <Button size="sm" variant="ghost" onClick={() => setPreviewKey((k) => k + 1)}>
+              {view === "console" ? (
+                <Button size="sm" variant="ghost" onClick={() => setLogs([])}>
+                  Clear
+                </Button>
+              ) : view === "preview" ? (
+                <Button size="sm" variant="ghost" onClick={() => { setLogs([]); setPreviewKey((k) => k + 1); }}>
                   Reload
                 </Button>
               ) : (
@@ -335,14 +378,26 @@ export function CodeAgent() {
               )}
             </div>
           </div>
-          {view === "preview" ? (
-            <iframe
-              key={previewKey}
-              title="App sandbox"
-              srcDoc={srcDoc}
-              sandbox="allow-scripts allow-forms allow-modals allow-popups"
-              className="h-full w-full flex-1 bg-background"
-            />
+          {view === "console" ? (
+            <div className="flex-1 overflow-y-auto bg-background p-2 font-mono text-xs">
+              {!logs.length && <p className="text-muted-foreground">No console output yet.</p>}
+              {logs.map((l, i) => (
+                <p key={i} className={`border-b border-border/40 py-1 ${l.type === "error" ? "text-destructive" : l.type === "warn" ? "text-primary" : ""}`}>
+                  [{l.type}] {l.message}
+                </p>
+              ))}
+            </div>
+          ) : view === "preview" ? (
+            <div className="flex flex-1 justify-center overflow-auto bg-secondary/40">
+              <iframe
+                key={previewKey}
+                title="App sandbox"
+                srcDoc={srcDoc}
+                sandbox="allow-scripts allow-forms allow-modals allow-popups"
+                style={{ width: device === "desktop" ? "100%" : device === "tablet" ? 768 : 375 }}
+                className="h-full max-w-full bg-background transition-all duration-300"
+              />
+            </div>
           ) : (
             <div className="flex min-h-0 flex-1">
               <div className="w-40 shrink-0 space-y-0.5 overflow-y-auto border-r border-border/70 p-1">
