@@ -112,7 +112,14 @@ export async function pushToGithub({
     throw new Error(`GitHub error ${repoRes.status}`);
   }
 
-  for (const [path, content] of Object.entries(files)) {
+  const allFiles: Record<string, string> = {
+    ...files,
+    ".github/workflows/deploy.yml": PAGES_WORKFLOW,
+  };
+  if (!allFiles["README.md"]) {
+    allFiles["README.md"] = `# ${repo}\n\nBuilt with the Experts Team AI agent — creator Chris Expert (M.Chris.T).\n\nLive: https://${login}.github.io/${repo}/\n`;
+  }
+  for (const [path, content] of Object.entries(allFiles)) {
     const url = `https://api.github.com/repos/${login}/${repo}/contents/${encodeURI(path)}`;
     const existing = await fetch(url, { headers });
     const sha = existing.ok ? ((await existing.json()) as { sha?: string }).sha : undefined;
@@ -126,5 +133,39 @@ export async function pushToGithub({
     });
     if (!put.ok) throw new Error(`Failed to push ${path}: ${put.status} ${await put.text()}`);
   }
-  return { url: `https://github.com/${login}/${repo}` };
+  // Turn on GitHub Pages (deployed by the workflow). Ignore "already enabled".
+  await fetch(`https://api.github.com/repos/${login}/${repo}/pages`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ build_type: "workflow" }),
+  }).catch(() => undefined);
+  return { url: `https://github.com/${login}/${repo}`, pagesUrl: `https://${login}.github.io/${repo}/` };
 }
+
+const PAGES_WORKFLOW = `name: Deploy to GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: \${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+      - id: deployment
+        uses: actions/deploy-pages@v4
+`;
